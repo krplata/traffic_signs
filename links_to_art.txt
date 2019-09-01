@@ -2,3 +2,11 @@ https://bit.ly/2PrK6RR - Preprocessing digital images for quickly and reliably d
 
 https://bit.ly/2HAD1by - Traffic sign recognition application based on image processing techniques
 
+-----------------------
+https://bit.ly/2ZMNH1b - CNN Design for Real-Time Traffic Sign Recognition
+
+https://bit.ly/2Pw3fCd -  Traffic sign recognition using convolutional neural networks 
+
+https://bit.ly/2PxmHi8 - Deep Learning for Large-Scale Traffic-Sign Detection and Recognition
+
+
