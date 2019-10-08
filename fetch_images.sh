@@ -1,20 +1,31 @@
 #!/bin/bash
 
-if [[ -d images ]]; then
-    echo "Images directory already present"
-    exit 0
-elif [[ ! -d $1 ]]; then
-    echo "First argument should be the project dir."
-    exit 1
-fi
+usage(){
 
-project_dir=$1
+}
 
-# Download training data
-wget https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip
+test_url=''
+training_url='https://sid.erda.dk/public/archives/daaeac0d7ce1152aea9b61d9f1e19370/GTSRB_Final_Training_Images.zip'
+fetch_url="$training_url"
+project_dir=$(realpath .)
 
+while getopts ":tc:d:" opt; do
+    case ${opt} in
+    t) fetch_url="$test_url" ;;
+    c) fetch_url="$OPTARG" ;;
+    d) project_dir="$OPTARG"
+    *)
+        p_error "[Error] Invalid argument $OPTARG"
+        usage
+        exit 1
+        ;;
+    esac
+done
+
+# Check if path $project_dir/images exists, is a directory and isn't empty
+
+filename="$(echo $fetch_url | grep -Eo '[a-zA-Z0-9._]+$')"
+wget $fetch_url
 mkdir -p $project_dir/images
-
-unzip GTSRB_Final_Training_Images.zip
-mv GTSRB/Final_Training/Images/* $project_dir/images
-rm -r GTSRB
+mv $filename $project_dir/images
+unzip -q "$project_dir/images/$filename"
