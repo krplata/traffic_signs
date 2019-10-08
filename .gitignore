@@ -127,3 +127,5 @@ dmypy.json
 traffic_signs/
 preview/
 images/
+GTSRB/
+*.zip
