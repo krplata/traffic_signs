@@ -1,10 +1,4 @@
 
-Just in time augmentation:
-	Prepping images for fixed input size:
-		- square : downsampling
-		- rectangular : downsample shorter edge -> cut a rectangular shape out of the middle
-
-
 Description of commercial approaches:
 https://machinelearningmastery.com/best-practices-for-preparing-and-augmenting-image-data-for-convolutional-neural-networks/
 
