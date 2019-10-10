@@ -19,4 +19,4 @@ def plt_count_of_classes(images_path, title):
         plt.show()
 
 
-plt_count_of_classes('./images', 'Amount of examples within each class')
+plt_count_of_classes('./data/train', 'Amount of examples within each class')
