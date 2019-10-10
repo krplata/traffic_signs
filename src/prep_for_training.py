@@ -59,14 +59,27 @@ def generate_augmented(source_dir, dest_class_size):
         p.sample(dest_class_size - file_count)
 
 
-script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
-parser = argparse.ArgumentParser()
-parser.add_argument('--src', dest='src_path', default=os.path.join(script_dir, "../GTSRB/Final_Training/Images/"),
-                    help='Sets the source path for recursive image augmentation. (Default: ./GTSRB/Final_Training/Images/)')
-parser.add_argument('--dest', dest='dest_path', default=os.path.join(script_dir, "../images/"),
-                    help='Sets the output path for recursive image augmentation. (Default: ./images/)')
+def cleanup_names(dest_path):
+    for r, d, f in os.walk(dest_path):
+        running_number = 0
+        for file in os.listdir(r):
+            file_path = os.path.join(r, file)
+            if os.path.isfile(file_path) and fnmatch.fnmatch(file, '*.jpg'):
+                index_str = str(running_number).zfill(5)
+                replacement = os.path.join(
+                    r, f"{os.path.basename(r)}_{index_str}.jpg")
+                os.rename(file_path, replacement)
+                running_number += 1
 
-args = parser.parse_args()
+
+script_dir=os.path.dirname(os.path.realpath(sys.argv[0]))
+parser=argparse.ArgumentParser()
+parser.add_argument('--src', dest = 'src_path', default = os.path.join(script_dir, "../GTSRB/Final_Training/Images/"),
+                    help = 'Sets the source path for recursive image augmentation. (Default: ./GTSRB/Final_Training/Images/)')
+parser.add_argument('--dest', dest = 'dest_path', default = os.path.join(script_dir, "../images/"),
+                    help = 'Sets the output path for recursive image augmentation. (Default: ./images/)')
+
+args=parser.parse_args()
 
 if not os.path.exists(args.dest_path):
     print(f"---> Creating path {args.dest_path}")
@@ -78,3 +91,4 @@ if not os.path.exists(args.src_path):
 
 ppm_dir_to_jpg(args.src_path, args.dest_path)
 generate_augmented(args.dest_path, 6000)
+cleanup_names(args.dest_path)

@@ -19,6 +19,9 @@ while getopts ":tc:d:" opt; do
 done
 
 filename="$(echo $fetch_url | grep -Eo '[a-zA-Z0-9._]+$')"
-wget $fetch_url
-unzip -q "$project_dir/$filename"
+#wget $fetch_url
+#unzip -q "$project_dir/$filename"
+python -m venv traffic_signs
+source traffic_signs/bin/activate
+pip install -r requirements.txt
 python $project_dir/src/prep_for_training.py
