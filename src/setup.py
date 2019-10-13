@@ -48,6 +48,4 @@ prep.generate_augmented(train_dir, CLASS_SIZE)
 prep.cleanup_names(train_dir)
 
 validation_dir = os.path.join(args.dest_path, "validate/")
-test_dir = os.path.join(args.dest_path, "test/")
-recreate_dir_tree(train_dir, test_dir)
 recreate_dir_tree(train_dir, validation_dir)

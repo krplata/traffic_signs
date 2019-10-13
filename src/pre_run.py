@@ -39,9 +39,3 @@ def im_fit_to_shape(image_data, dest_size, interpol=cv2.INTER_NEAREST):
 
 def im_prepare(image_data):
     return im_fit_to_shape(image_data, 31)
-
-
-# image = cv2.imread(
-#     '/home/desktop/Desktop/git/traffic_signs/images/00000/00000_00056.jpg', cv2.IMREAD_COLOR)
-
-# cv2.imwrite('./output.png', im_fit_to_shape(image, 31))

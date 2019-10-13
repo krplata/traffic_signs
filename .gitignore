@@ -127,5 +127,6 @@ dmypy.json
 traffic_signs/
 preview/
 data/
+archives/
 GTSRB/
 *.zip
