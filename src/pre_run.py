@@ -38,8 +38,7 @@ def im_fit_to_shape(image_data, dest_size, interpol=cv2.INTER_NEAREST):
 
 
 def im_prepare(image_data):
-    downsampled = im_downsample(image_data, 31)
-    return cv2.equalizeHist(downsampled)
+    return im_fit_to_shape(image_data, 31)
 
 
 # image = cv2.imread(

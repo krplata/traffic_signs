@@ -7,12 +7,14 @@ import os
 import sys
 import fnmatch
 import glob
+import pre_run
 
 
 def to_jpg(src_path, output_dir=None):
     image = cv2.imread(src_path, cv2.IMREAD_COLOR)
     no_extension = os.path.splitext(src_path)[0]
     converted = no_extension + '.jpg'
+    image = pre_run.im_prepare(image)
     if not output_dir:
         cv2.imwrite(converted, image)
     else:
