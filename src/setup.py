@@ -3,7 +3,7 @@ import os
 import prep_for_training as prep
 import sys
 
-CLASS_SIZE = 3000
+CLASS_SIZE = 4000
 
 
 def move_files(source_dir, dest_dir):

@@ -8,7 +8,7 @@ import sys
 import fnmatch
 import glob
 import pre_run
-
+import pandas as pd
 
 def to_jpg(src_path, output_dir=None):
     image = cv2.imread(src_path, cv2.IMREAD_COLOR)
