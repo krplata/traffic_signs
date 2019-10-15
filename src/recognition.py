@@ -3,6 +3,7 @@ from keras.models import Sequential
 from keras.layers import Dense, Conv2D, Flatten, Dropout, MaxPooling2D
 from tensorflow.python.client import device_lib
 import pandas as pd
+import numpy as np
 
 datagen = ImageDataGenerator()
 
@@ -33,7 +34,7 @@ model.add(Dense(43, activation='softmax'))
 model.compile(loss='categorical_crossentropy',
               optimizer='adam', metrics=['accuracy'])
 
-model.fit_generator(train_it, epochs=30,
+model.fit_generator(train_it, epochs=25,
                     validation_data=val_it, validation_steps=8)
 
 
@@ -52,4 +53,17 @@ test_generator = test_datagen.flow_from_dataframe(
     class_mode="categorical",
     target_size=(31, 31))
 
+    
+test_generator.reset()
 pred = model.predict_generator(test_generator, verbose=1)
+
+predicted_class_indices = np.argmax(pred, axis=1)
+
+labels = (test_generator.class_indices)
+labels = dict((v, k) for k, v in labels.items())
+predictions = [labels[k] for k in predicted_class_indices]
+
+filenames = test_generator.filenames
+results = pd.DataFrame({"Filename": filenames,
+                        "Predictions": predictions})
+results.to_csv("results.csv", index=False)
