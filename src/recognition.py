@@ -10,53 +10,70 @@ from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 import compare_pred as cp
 
-train_datagen = ImageDataGenerator()
-val_datagen = ImageDataGenerator()
-test_datagen = ImageDataGenerator()
 
-train_flow = train_datagen.flow_from_directory(
+class TsRecognitionModel:
+    def __init__(self, layers=[]):
+        self.__layers__ = layers
+        self.__model__ = Sequential()
+        self.__build_model__()
+
+    def __build_model__(self):
+        if self.__layers__:
+            for layer in self.__layers__:
+                self.__model__.add(layer)
+        else:
+            self.__model__.add(Conv2D(32, (3, 3), padding='same',
+                                      input_shape=(31, 31, 3), activation='relu'))
+            self.__model__.add(Conv2D(32, (3, 3), activation='relu'))
+            self.__model__.add(MaxPooling2D(pool_size=(2, 2)))
+            self.__model__.add(Dropout(0.2))
+            self.__model__.add(
+                Conv2D(64, (3, 3), padding='same', activation='relu'))
+            self.__model__.add(Conv2D(64, (3, 3), activation='relu'))
+            self.__model__.add(MaxPooling2D(pool_size=(2, 2)))
+            self.__model__.add(Dropout(0.2))
+            self.__model__.add(Flatten())
+            self.__model__.add(Dense(512, activation='relu'))
+            self.__model__.add(Dropout(0.2))
+            self.__model__.add(Dense(43, activation='softmax'))
+        self.__model__.compile(
+            loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+    def run_training(self, train_gen, valid_gen, eps=10):
+        self.__model__.fit_generator(train_gen, epochs=eps,
+                                     validation_data=valid_gen, verbose=1)
+        self.__model__.evaluate_generator(generator=valid_gen)
+
+    def predict_w_gen(self, test_gen, step_size):
+        test_gen.reset()
+        return self.__model__.predict_generator(
+            test_gen, steps=step_size, verbose=1)
+
+    def predictions_to_csv(self, test_gen, predictions, filename, delimiter=';'):
+        predicted_class_indices = np.argmax(predictions, axis=1)
+        labels = (train_flow.class_indices)
+        labels = dict((v, k) for k, v in labels.items())
+        preds = [labels[k] for k in predicted_class_indices]
+        filenames = test_gen.filenames
+        results = pd.DataFrame({"Filename": filenames,
+                                "Predictions": preds})
+        results.to_csv("results.csv", index=False, sep=delimiter)
+
+
+train_flow = ImageDataGenerator().flow_from_directory(
     './data/train/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
-val_flow = val_datagen.flow_from_directory(
+val_flow = ImageDataGenerator().flow_from_directory(
     './data/validate/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
-test_flow = test_datagen.flow_from_directory(
+test_flow = ImageDataGenerator().flow_from_directory(
     './data/test/', class_mode='categorical', batch_size=1, color_mode="rgb", shuffle=False, target_size=(31, 31))
 
-model = Sequential()
-model.add(Conv2D(32, (3, 3), padding='same',
-                 input_shape=(31, 31, 3), activation='relu'))
-model.add(Conv2D(32, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.2))
+tsmodel = TsRecognitionModel()
+tsmodel.run_training(train_flow, val_flow)
 
-model.add(Conv2D(64, (3, 3), padding='same', activation='relu'))
-model.add(Conv2D(64, (3, 3), activation='relu'))
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Dropout(0.2))
-model.add(Flatten())
-model.add(Dense(512, activation='relu'))
-model.add(Dropout(0.2))
-model.add(Dense(43, activation='softmax'))
-
-model.compile(loss='categorical_crossentropy',
-              optimizer='adam', metrics=['accuracy'])
-
-model.fit_generator(train_flow, epochs=10, validation_data=val_flow, verbose=1)
-model.evaluate_generator(generator=val_flow)
-
+print("Running predictions on internal test data:")
 STEP_SIZE_TEST = test_flow.n//test_flow.batch_size
-test_flow.reset()
-pred = model.predict_generator(test_flow,
-                               steps=STEP_SIZE_TEST,
-                               verbose=1)
-predicted_class_indices = np.argmax(pred, axis=1)
-labels = (train_flow.class_indices)
-labels = dict((v, k) for k, v in labels.items())
-predictions = [labels[k] for k in predicted_class_indices]
-filenames = test_flow.filenames
-results = pd.DataFrame({"Filename": filenames,
-                        "Predictions": predictions})
-results.to_csv("results.csv", index=False)
-
-print("Results of predictions on internal test data:")
+predictions = tsmodel.predict_w_gen(test_flow, STEP_SIZE_TEST)
+tsmodel.predictions_to_csv(test_flow, predictions, 'results.csv')
 cp.accuracy_on_generated("results.csv")
+
 print("Results of predictions on external test data:")

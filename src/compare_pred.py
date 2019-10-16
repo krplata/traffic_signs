@@ -4,7 +4,7 @@ import os
 
 
 def accuracy_on_generated(csv_file):
-    source_data = pd.read_csv(csv_file, dtype=str, sep=',')
+    source_data = pd.read_csv(csv_file, dtype=str, sep=';')
     values = source_data.values
     counter = 1
     for value in values:
