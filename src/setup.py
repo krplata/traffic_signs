@@ -3,7 +3,7 @@ import os
 import prep_for_training as prep
 import sys
 
-CLASS_SIZE = 3000
+CLASS_SIZE = 4000
 
 
 def move_files(source_dir, dest_dir):
@@ -49,3 +49,6 @@ prep.cleanup_names(train_dir)
 
 validation_dir = os.path.join(args.dest_path, "validate/")
 recreate_dir_tree(train_dir, validation_dir)
+
+test_dir = os.path.join(args.dest_path, "test/")
+recreate_dir_tree(train_dir, test_dir)
