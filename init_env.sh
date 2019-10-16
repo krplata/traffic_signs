@@ -69,6 +69,9 @@ mkdir -p "$archive_dir"
 download_n_unzip "$training_url" "$project_dir"
 download_n_unzip "$test_url1" "$project_dir"
 download_n_unzip "$test_url2" "$project_dir/GTSRB"
+mkdir -p "$project_dir/data/external"
+cp -r "$project_dir/GTSRB/Final_Test/Images/." "$project_dir/data/external"
+cp "$project_dir/GTSRB/GT-final_test.csv" "$project_dir/data/external"
 
 if ! $skip_python; then
     python -m venv traffic_signs
@@ -77,9 +80,6 @@ if ! $skip_python; then
     p_info_msg "Setting up the dataset at: $project_dir/data"
     python $project_dir/src/setup.py --src "$project_dir/GTSRB/Final_Training/Images" \
         --dest "$project_dir/data"
-    mkdir -p "$project_dir/data/external"
-    cp -r "$project_dir/GTSRB/Final_Test/Images/." "$project_dir/data/external"
-    cp "$project_dir/GTSRB/GT-final_test.csv" "$project_dir/data/external"
 else
     p_info_msg "Skipping augmented data setup"
 fi

@@ -1,6 +1,6 @@
 
 import os  # noqa
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'  # noqa
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # noqa
 import tensorflow as tf  # noqa
 
 import numpy as np
@@ -47,7 +47,7 @@ class TsRecognitionModel:
     def predict_w_gen(self, test_gen, step_size):
         test_gen.reset()
         return self.__model__.predict_generator(
-            test_gen, steps=step_size, verbose=1)
+            test_gen, verbose=1)
 
     def predictions_to_csv(self, test_gen, predictions, filename, delimiter=';'):
         predicted_class_indices = np.argmax(predictions, axis=1)
@@ -57,18 +57,20 @@ class TsRecognitionModel:
         filenames = test_gen.filenames
         results = pd.DataFrame({"Filename": filenames,
                                 "Predictions": preds})
-        results.to_csv("results.csv", index=False, sep=delimiter)
+        results.to_csv(filename, index=False, sep=delimiter)
 
-
+print("Initializing training data:")
 train_flow = ImageDataGenerator().flow_from_directory(
     './data/train/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
+print("Initializing validation data (subset of training data with an 80:20 split):")
 val_flow = ImageDataGenerator().flow_from_directory(
     './data/validate/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
+print("Initializing internal testing data (subset of training data with an 80:20 split):")
 test_flow = ImageDataGenerator().flow_from_directory(
     './data/test/', class_mode='categorical', batch_size=1, color_mode="rgb", shuffle=False, target_size=(31, 31))
 
 tsmodel = TsRecognitionModel()
-tsmodel.run_training(train_flow, val_flow)
+tsmodel.run_training(train_flow, val_flow, eps=10)
 
 print("Running predictions on internal test data:")
 STEP_SIZE_TEST = test_flow.n//test_flow.batch_size
@@ -77,3 +79,21 @@ tsmodel.predictions_to_csv(test_flow, predictions, 'results.csv')
 cp.accuracy_on_generated("results.csv")
 
 print("Results of predictions on external test data:")
+externaldf = pd.read_csv(
+    "./data/external/GT-final_test.csv", dtype=str, sep=';')
+
+extern_gen = ImageDataGenerator().flow_from_dataframe(
+    dataframe=externaldf,
+    directory="./data/external/",
+    x_col="Filename",
+    y_col=None,
+    batch_size=1,
+    seed=42,
+    shuffle=False,
+    class_mode=None,
+    target_size=(31, 31))
+
+external_predictions = tsmodel.predict_w_gen(extern_gen, STEP_SIZE_TEST)
+tsmodel.predictions_to_csv(
+    extern_gen, external_predictions, 'ext_results.csv')
+cp.accuracy_on_external("./data/external/GT-final_test.csv", "ext_results.csv")
