@@ -59,6 +59,10 @@ class TsRecognitionModel:
                                 "Predictions": preds})
         results.to_csv(filename, index=False, sep=delimiter)
 
+    def save_model(self, filepath):
+        self.__model__.save(filepath)
+
+
 print("Initializing training data:")
 train_flow = ImageDataGenerator().flow_from_directory(
     './data/train/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
@@ -97,3 +101,6 @@ external_predictions = tsmodel.predict_w_gen(extern_gen, STEP_SIZE_TEST)
 tsmodel.predictions_to_csv(
     extern_gen, external_predictions, 'ext_results.csv')
 cp.accuracy_on_external("./data/external/GT-final_test.csv", "ext_results.csv")
+
+print("Saving full model architecture into models/working_example.h5")
+tsmodel.save_model('./models/working_example.h5')
