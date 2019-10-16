@@ -3,10 +3,19 @@ import os
 import prep_for_training as prep
 import sys
 
-CLASS_SIZE = 4000
+CLASS_SIZE = 6000
 
 
-def move_files(source_dir, dest_dir):
+def move_files(source_dir, dest_dir, N=0.2):
+    '''
+    Moves specified factor of *.jpg files from source_dir into dest_dir.
+    Both paths must exist.
+
+    Parameters:
+        source_dir (str): Directory with *.jpg files from which files will be moved.
+        dest_dir (str): Directory to which the files will be moved.
+        N (int): Percentage of files to be moved. (Range: [0, 1])
+    '''
     index = 0
     for fname in os.listdir(source_dir):
         if fname.endswith('.jpg'):
@@ -18,12 +27,22 @@ def move_files(source_dir, dest_dir):
             break
 
 
-def recreate_dir_tree(source_dir, dest_dir):
+def split_directories(source_dir, dest_dir, N=0.2):
+    '''
+    Splits *.jpg files into two directory trees. 
+    Amount of files moved is specified by the N factor.
+    Used for splitting the dataset into training and validation.
+
+    Parameters:
+        source_dir (str): Root of the source directory tree.
+        dest_dir (str): Root of the destination directory tree.
+        N (int): Percentage of files to be moved. (Range: [0, 1])
+    '''
     for root, dirnames, filenames in os.walk(source_dir):
         structure = os.path.join(dest_dir, root[len(source_dir):])
         if not os.path.isdir(structure):
             os.mkdir(structure)
-            move_files(root, structure)
+            move_files(root, structure, N)
 
 
 script_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
@@ -48,7 +67,7 @@ prep.generate_augmented(train_dir, CLASS_SIZE)
 prep.cleanup_names(train_dir)
 
 validation_dir = os.path.join(args.dest_path, "validate/")
-recreate_dir_tree(train_dir, validation_dir)
+split_directories(train_dir, validation_dir)
 
 test_dir = os.path.join(args.dest_path, "test/")
-recreate_dir_tree(train_dir, test_dir)
+split_directories(train_dir, test_dir)

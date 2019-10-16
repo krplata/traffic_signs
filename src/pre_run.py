@@ -1,10 +1,15 @@
 import cv2
 
-# Functions used for preparing images to be used as an input to CNN.
-# Image of an arbitrary size -> downsampling -> histogram equalization -> CNN
-
 
 def resize_smaller_side(image_data, dest_size, interpol=cv2.INTER_NEAREST):
+    '''
+    Returns an image resized along the smaller dimension.
+
+    Parameters:
+        image_data (cv2_image): Image to be resized.
+        dest_size (int): Destination size for the resized dimension.
+        interpol (cv2.interpolation_methods): Interpolation method used during resizing. 
+    '''
     im_y, im_x = image_data.shape[:2]
     smaller_side = (im_y, dest_size) if im_x < im_y else (
         dest_size, im_x)
@@ -13,6 +18,14 @@ def resize_smaller_side(image_data, dest_size, interpol=cv2.INTER_NEAREST):
 
 
 def im_upsample_to(image_data, dest_size):
+    '''
+    Returns an image upsampled by dest_size/smaller_edge.
+    This way, the aspect ratio of an image is preserved.
+
+    Parameters:
+        image_data (cv2_image): Image to be resized.
+        dest_size (int): Upsampling target size.
+    '''
     im_y, im_x = image_data.shape[:2]
     smaller_edge = min(im_x, im_y)
     resize_factor = dest_size/smaller_edge
@@ -21,14 +34,18 @@ def im_upsample_to(image_data, dest_size):
 
 
 def im_fit_to_shape(image_data, dest_size, interpol=cv2.INTER_NEAREST):
+    '''
+    Fits an image into target size.
+    Needs a little love, this thing is nasty.
+    '''
     im_y, im_x = image_data.shape[:2]
     if im_x == im_y:
         return cv2.resize(
             image_data, (dest_size, dest_size), interpolation=interpol)
     else:
         resized = []
-        if im_x < 31 or im_y < 31:
-            resized = im_upsample_to(image_data, 31)
+        if im_x < dest_size or im_y < dest_size:
+            resized = im_upsample_to(image_data, dest_size)
         else:
             resized = resize_smaller_side(image_data, dest_size)
         resized_y, resized_x = resized.shape[:2]
