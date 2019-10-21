@@ -1,65 +1,9 @@
 import argparse
 import os
 import sys
-import requests
-from zipfile import ZipFile
-from tqdm import tqdm
+from src import dataset_utils as utils
 import shutil
-
-
-def fetch_file(url, target_path, filename=''):
-    r = requests.get(url, stream=True)
-    total_size = int(r.headers.get('content-length', 0))
-    block_size = 1024
-    t = tqdm(total=total_size, unit='iB', unit_scale=True, desc=filename)
-    with open(target_path, 'wb') as f:
-        for data in r.iter_content(block_size):
-            t.update(len(data))
-            f.write(data)
-
-
-def download_files(urls, dest_dir='', force=False):
-    if dest_dir:
-        os.makedirs(dest_dir, exist_ok=True)
-    for url in download_urls:
-        filename = url.rsplit(sep='/', maxsplit=1)[1]
-        file_path = os.path.join(dest_dir, filename)
-        if not os.path.exists(file_path) or force:
-            fetch_file(url, file_path, filename)
-        else:
-            print(f"-- File {filename} already exists. Skipping download.")
-
-
-def unzip_files(source_dir, target_dir):
-    for f in os.listdir(source_dir):
-        filepath = os.path.join(source_dir, f)
-        if os.path.isfile(filepath):
-            print(f"-- Extracting {f} to {target_dir}.")
-            ZipFile(filepath).extractall(target_dir)
-
-
-def move_contents(source_dir, target_dir, ext=''):
-    for f in os.listdir(source_dir):
-        src_filepath = os.path.join(source_dir, f)
-        target_filepath = os.path.join(target_dir, f)
-        os.rename(src_filepath, target_filepath)
-
-
-def cleanup_gtsrb_files(gtsrb_dir, target_dir):
-    '''
-    Moves all training and test data into specific directories.
-    '''
-    training_dir = os.path.join(target_dir, 'train')
-    test_dir = os.path.join(target_dir, 'external')
-    if not os.path.exists(training_dir):
-        os.makedirs(training_dir, exist_ok=True)
-    if not os.path.exists(test_dir):
-        os.makedirs(test_dir, exist_ok=True)
-    move_contents(os.path.join(
-        gtsrb_dir, 'Final_Training/Images'), training_dir)
-    move_contents(os.path.join(gtsrb_dir, 'Final_Test/Images'), test_dir)
-    os.remove(os.path.join(test_dir, 'GT-final_test.test.csv'))
-
+from src import augmentation as aug
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--skip-external', dest='skip_ext',
@@ -80,13 +24,20 @@ if not args.skip_ext:
 
 project_dir = os.path.dirname(os.path.realpath(sys.argv[0]))
 archive_dir = os.path.join(project_dir, 'archives')
-data_dir = os.path.join(project_dir, 'data')
-gtsrb_dir = os.path.join(data_dir, 'GTSRB')
+reco_data_dir = os.path.join(project_dir, 'data', 'recognition')
+gtsrb_dir = os.path.join(reco_data_dir, 'GTSRB')
+train_dir = os.path.join(reco_data_dir, 'train')
 
-download_files(download_urls, archive_dir)
-unzip_files(archive_dir, data_dir)
+utils.download_files(download_urls, archive_dir)
+utils.unzip_files(archive_dir, reco_data_dir)
 
-cleanup_gtsrb_files(gtsrb_dir, data_dir)
-shutil.rmtree(gtsrb_dir)
-os.rename(os.path.join(data_dir, 'GT-final_test.csv'),
-          os.path.join(data_dir, 'external', 'GT-final_test.csv'))
+utils.cleanup_gtsrb_files(gtsrb_dir, reco_data_dir)
+
+aug.ppm_dir_to_jpg(reco_data_dir, train_dir)
+
+recognition_class_size = 4000
+aug.generate_augmented(train_dir, recognition_class_size)
+utils.cleanup_augmentor_names(train_dir)
+
+utils.split_directories(train_dir, os.path.join(reco_data_dir, "validate/"))
+utils.split_directories(train_dir, os.path.join(reco_data_dir, "test/"))

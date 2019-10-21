@@ -1,14 +1,13 @@
 import Augmentor
 from Augmentor import Pipeline as augpipe
 import cv2
-import argparse
 import random
 import os
 import sys
-import fnmatch
-import glob
+from fnmatch import fnmatch
 import shutil
-import pre_run
+from . import reshape
+from . import dataset_utils as utils
 
 
 def to_jpg(src_path, output_dir=None):
@@ -25,7 +24,7 @@ def to_jpg(src_path, output_dir=None):
     image = cv2.imread(src_path, cv2.IMREAD_COLOR)
     no_extension = os.path.splitext(src_path)[0]
     converted = no_extension + '.jpg'
-    image = pre_run.im_prepare(image)
+    image = reshape.im_prepare(image)
     if not output_dir:
         cv2.imwrite(converted, image)
     else:
@@ -42,33 +41,12 @@ def ppm_dir_to_jpg(source_dir, output_dir):
         source_dir (str): Path to the directory with source (*.ppm) files.
         output_dir (str): Path to the output directory.
     '''
-    print(f"---> Converting .ppm files from {source_dir}\n")
+    print(f"-- Converting .ppm files from {source_dir}\n")
     for r, d, f in os.walk(source_dir):
         for file in os.listdir(r):
-            if fnmatch.fnmatch(file, '*.ppm'):
-                output_path = r.replace(source_dir, output_dir)
-                os.makedirs(output_path, exist_ok=True)
-                to_jpg(os.path.join(r, file), output_path)
-
-
-def count_files(dirpath, extension='*', recursive=False):
-    '''
-    Returns the number of files within a directory tree.
-
-    Parameters:
-        dirpath (str): Path to the directory, in which the files will be counted.
-        extension (str): Extension of the files that will be considered.
-        recursive (bool): Count files in subdirectories.
-    '''
-    if not recursive:
-        return len(glob.glob1(dirpath, extension))
-    else:
-        file_counter = 0
-        for r, d, f in os.walk(dirpath):
-            for file in f:
-                if file.endswith(extension):
-                    file_counter += 1
-        return file_counter
+            if fnmatch(file, '*.ppm'):
+                to_jpg(os.path.join(r, file))
+                os.remove(os.path.join(r, file))
 
 
 def generate_augmented(source_dir, dest_class_size):
@@ -78,7 +56,7 @@ def generate_augmented(source_dir, dest_class_size):
 
     for directory in os.listdir(source_dir):
         images_dir = os.path.join(source_dir, directory)
-        file_count = count_files(images_dir)
+        file_count = utils.count_files(images_dir)
         enhancement_factor = int(dest_class_size/file_count)
         for it in range(0, enhancement_factor):
             p = augpipe(source_directory=images_dir,
@@ -93,16 +71,3 @@ def generate_augmented(source_dir, dest_class_size):
         for f in os.listdir(output_path):
             shutil.move(os.path.join(output_path, f), images_dir)
         os.rmdir(output_path)
-
-
-def cleanup_names(dest_path):
-    for r, d, f in os.walk(dest_path):
-        running_number = 0
-        for file in os.listdir(r):
-            file_path = os.path.join(r, file)
-            if os.path.isfile(file_path) and fnmatch.fnmatch(file, '*.jpg'):
-                index_str = str(running_number).zfill(5)
-                replacement = os.path.join(
-                    r, f"{os.path.basename(r)}_{index_str}.jpg")
-                os.rename(file_path, replacement)
-                running_number += 1

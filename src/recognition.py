@@ -102,5 +102,5 @@ tsmodel.predictions_to_csv(
     extern_gen, external_predictions, 'ext_results.csv')
 cp.accuracy_on_external("./data/external/GT-final_test.csv", "ext_results.csv")
 
-print("Saving full model architecture into models/working_example.h5")
-tsmodel.save_model('./models/working_example.h5')
+# print("Saving full model architecture into models/working_example.h5")
+# tsmodel.save_model('./models/working_example.h5')
