@@ -127,7 +127,7 @@ def cleanup_gtsrb_files(gtsrb_dir, target_dir):
     os.remove(os.path.join(test_dir, 'GT-final_test.test.csv'))
     shutil.rmtree(gtsrb_dir)
     os.rename(os.path.join(target_dir, 'GT-final_test.csv'),
-          os.path.join(test_dir, 'GT-final_test.csv'))
+              os.path.join(test_dir, 'GT-final_test.csv'))
 
 
 def move_files(source_dir, dest_dir, N=1, ext='*'):
@@ -144,7 +144,7 @@ def move_files(source_dir, dest_dir, N=1, ext='*'):
     index = 0
     size = count_files(source_dir, ext)
     for fname in os.listdir(source_dir):
-        if ext == '*' or fname.endswith(ext):
+        if ext == '*' or fnmatch(fname, ext):
             index += 1
             src_file = os.path.join(source_dir, fname)
             dst_file = os.path.join(dest_dir, fname)
@@ -153,19 +153,20 @@ def move_files(source_dir, dest_dir, N=1, ext='*'):
             break
 
 
-def split_directories(source_dir, dest_dir, N=0.2):
+def split_directories(source_root, dest_root, N=0.2):
     '''
     Splits *.jpg files into two directory trees. 
     Amount of files moved is specified by the N factor.
     Used for splitting the dataset into training and validation.
 
     Parameters:
-        source_dir (str): Root of the source directory tree.
-        dest_dir (str): Root of the destination directory tree.
+        source_root (str): Root of the source directory tree.
+        dest_root (str): Root of the destination directory tree.
         N (int): Percentage of files to be moved. (Range: [0, 1])
     '''
-    for root, dirnames, filenames in os.walk(source_dir):
-        structure = os.path.join(dest_dir, root[len(source_dir):])
-        if not os.path.isdir(structure):
-            os.mkdir(structure)
-            move_files(root, structure, N, 'jpg')
+    for dirname in os.listdir(source_root):
+        src_dir = os.path.join(source_root, dirname)
+        dest_dir = os.path.join(dest_root, dirname)
+        if not os.path.isdir(dest_dir):
+            os.makedirs(dest_dir, exist_ok=True)
+            move_files(src_dir, dest_dir, N, '*.jpg')

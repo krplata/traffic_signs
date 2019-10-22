@@ -26,5 +26,5 @@ def plt_count_of_classes(images_path, title):
         plt.show()
 
 
-plt_count_of_classes('./data/train',
+plt_count_of_classes('./data/recognition/train',
                      'Amount of samples in each class')
