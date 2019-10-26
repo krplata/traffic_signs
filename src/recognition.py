@@ -8,7 +8,7 @@ import pandas as pd
 from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
-import compare_pred as cp
+import comparison as cp
 
 
 class TsRecognitionModel:
@@ -65,13 +65,13 @@ class TsRecognitionModel:
 
 print("Initializing training data:")
 train_flow = ImageDataGenerator().flow_from_directory(
-    './data/train/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
+    './data/recognition/train/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
 print("Initializing validation data (subset of training data with an 80:20 split):")
 val_flow = ImageDataGenerator().flow_from_directory(
-    './data/validate/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
+    './data/recognition/validate/', class_mode='categorical', batch_size=64, color_mode="rgb", shuffle=True, target_size=(31, 31))
 print("Initializing internal testing data (subset of training data with an 80:20 split):")
 test_flow = ImageDataGenerator().flow_from_directory(
-    './data/test/', class_mode='categorical', batch_size=1, color_mode="rgb", shuffle=False, target_size=(31, 31))
+    './data/recognition/test/', class_mode='categorical', batch_size=1, color_mode="rgb", shuffle=False, target_size=(31, 31))
 
 tsmodel = TsRecognitionModel()
 tsmodel.run_training(train_flow, val_flow, eps=10)
@@ -84,11 +84,11 @@ cp.accuracy_on_generated("results.csv")
 
 print("Results of predictions on external test data:")
 externaldf = pd.read_csv(
-    "./data/external/GT-final_test.csv", dtype=str, sep=';')
+    "./data/recognition/external/GT-final_test.csv", dtype=str, sep=';')
 
 extern_gen = ImageDataGenerator().flow_from_dataframe(
     dataframe=externaldf,
-    directory="./data/external/",
+    directory="./data/recognition/external/",
     x_col="Filename",
     y_col=None,
     batch_size=1,
@@ -100,7 +100,7 @@ extern_gen = ImageDataGenerator().flow_from_dataframe(
 external_predictions = tsmodel.predict_w_gen(extern_gen, STEP_SIZE_TEST)
 tsmodel.predictions_to_csv(
     extern_gen, external_predictions, 'ext_results.csv')
-cp.accuracy_on_external("./data/external/GT-final_test.csv", "ext_results.csv")
+cp.accuracy_on_external("./data/recognition/external/GT-final_test.csv", "ext_results.csv")
 
 # print("Saving full model architecture into models/working_example.h5")
 # tsmodel.save_model('./models/working_example.h5')

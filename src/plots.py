@@ -22,9 +22,11 @@ def plt_count_of_classes(images_path, title):
         plt.bar(np.arange(len(names)), file_count_list,
                 align='center')
         plt.xticks(np.arange(len(names)), names)
+        plt.xlabel('Numer klasy')
+        plt.ylabel('Liczba próbek')
         plt.title(title)
         plt.show()
 
 
 plt_count_of_classes('./data/recognition/train',
-                     'Amount of samples in each class')
+                     'Rozmiary klas w bazie GTSRB po wyrównaniu')

@@ -10,7 +10,7 @@ from . import reshape
 from . import dataset_utils as utils
 
 
-def to_jpg(src_path, output_dir=None):
+def to_grey_jpg(src_path, output_dir=None):
     '''
     Converts an image at src_path to *.jpg file.
     If output_dir isn't specified, the output image will 
@@ -25,16 +25,17 @@ def to_jpg(src_path, output_dir=None):
     no_extension = os.path.splitext(src_path)[0]
     converted = no_extension + '.jpg'
     image = reshape.im_prepare(image)
+    grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     if not output_dir:
-        cv2.imwrite(converted, image)
+        cv2.imwrite(converted, grey)
     else:
         filename = os.path.basename(converted)
-        cv2.imwrite(os.path.join(output_dir, filename), image)
+        cv2.imwrite(os.path.join(output_dir, filename), grey)
 
 
-def ppm_dir_to_jpg(source_dir, output_dir):
+def ppm_dir_to_grey_jpg(source_dir, output_dir):
     '''
-    Converts all *.ppm files within a directory to *.jpg.
+    Converts all *.ppm files within a directory to greyscale *.jpg.
     Output directory will be created, if it doesn't already exist.
 
     Parameters:
@@ -45,14 +46,14 @@ def ppm_dir_to_jpg(source_dir, output_dir):
     for r, d, f in os.walk(source_dir):
         for file in os.listdir(r):
             if fnmatch(file, '*.ppm'):
-                to_jpg(os.path.join(r, file))
+                to_grey_jpg(os.path.join(r, file))
                 os.remove(os.path.join(r, file))
 
 
 def generate_augmented(source_dir, dest_class_size):
     geometric_aug = [augpipe.skew, augpipe.rotate_random_90,
                      augpipe.flip_random]
-    color_aug = [augpipe.random_brightness, augpipe.random_contrast]
+    color_aug = [augpipe.random_brightness, augpipe.random_color]
 
     for directory in os.listdir(source_dir):
         images_dir = os.path.join(source_dir, directory)
@@ -65,7 +66,6 @@ def generate_augmented(source_dir, dest_class_size):
             rand_color = color_aug[random.randint(0, len(color_aug) - 1)]
             rand_geo(p, probability=1)
             rand_color(p, probability=0.5, min_factor=0.6, max_factor=0.9)
-            p.greyscale(1.0)
             p.process()
         output_path = os.path.join(images_dir, "output")
         for f in os.listdir(output_path):
