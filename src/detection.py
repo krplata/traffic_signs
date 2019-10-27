@@ -1,85 +1,105 @@
 import cv2
-import matplotlib.pyplot as plt
+from image_pyramid import Image_Pyramid
 from skimage.feature import hog
 from sklearn import svm
-import time
+from sklearn.model_selection import train_test_split
 import os
 from fnmatch import fnmatch
-import numpy as np
 from joblib import dump, load
 
 
-class Image_Pyramid:
-    '''
-    Creates a tuple filled with images scaled down by a factor.
-    Used in a sliding window method for detecting shapes (in this case traffic signs).
+class Feature_Extractor:
+    def __init__(self, function, **args):
+        self.__function__ = function
+        self.__args__ = args
 
-    Parameters:
-        image (cv2_image): Image used for scaling down and creating the pyramid.
-        scale_factor (float): Factor by which the dimensions will be resized at each iteration. (Range: (0, 1))
-        min_dim (list(int, int)): Cutoff point for generating images. If the dimensions
-        don't align with the scale factor, an image smaller than min_dim won't be created.
-    '''
-
-    def __init__(self, image, scale_factor, min_dim):
-        self.__images__ = (image, )
-        if scale_factor <= 0 or scale_factor >= 1:
-            return
-        while True:
-            resized_width = int(self.__images__[-1].shape[1] * scale_factor)
-            resized_height = int(self.__images__[-1].shape[0] * scale_factor)
-            if resized_height > min_dim[1] and resized_width > min_dim[0]:
-                resized = cv2.resize(
-                    self.__images__[-1], dsize=(resized_width, resized_height))
-                self.__images__ += (resized, )
-            else:
-                break
-
-    def sliding_window(self, size, step):
+    def __yield_from_dir__(self, directory, ext):
         '''
-        Runs a 'size' sized window with a 'step' over the image.
-        On each iteration, the function yields a window available for further classification.
+        Returns a generator of images from source_dir resized to dsize.
 
         Parameters:
-            - size (x:int, y:int): Defines the dimensions of the sliding window.
-            - step (x:int, y:int): Defines the step sizes along the horizontal and vertical axis.
+            source_dir (str): Source path for images.
+            ext (str): Extension of images in directory (Default = ppm)
         '''
-        for index, image in enumerate(self.__images__):
-            for y in range(0, image.shape[0] - size[1], step[1]):
-                for x in range(0, image.shape[1] - size[0], step[0]):
-                    yield [image[y:y+size[1], x:x+size[0]], (x, y, x+size[0], y+size[1])]
+        for filename in os.listdir(pos_dir):
+            if fnmatch(filename, ext):
+                yield cv2.imread(os.path.join(pos_dir, filename), cv2.IMREAD_COLOR)
+
+    def __apply_to_gen__(self, im_generator):
+        '''
+        Applies a function to all images fetched from a generator.
+        Image will be passed as the first argument to the function.
+        Used mainly as function for extracting features.
+        Returns a list of results from each function run.
+
+        Parameters:
+            im_generator (generator): Generator of images, usually a return value from 'yield_images_from_dir'.
+            function (function): Function to apply on all images.
+            args (dict): Dictionary of arguments passed to the function, along with an image.
+        '''
+        results = []
+        for image in im_generator:
+            results.append(self.__function__(image, self.__args__))
+        return results
+
+    def dir_extract(self, dirpath, ext='*.ppm'):
+        generator = self.__yield_from_dir__(dirpath, ext)
+        results = []
+        for image in generator:
+            x, y, z = image.shape
+            pyramid = Image_Pyramid(image, 1.0, ux, y))
+            window_gen=pyramid.sliding_window((32, 32), (10, 10))
+            results.append(self.__apply_to_gen__(window_gen))
+        return results
+
+    def extract(self, image):
+        return self.__function__(image, self.__args__)
 
 
-# pos_dir = './data/detection/train/positive'
-# neg_dir = './data/detection/train/negative'
+class SVM:
+    def __init__(self, kernel = 'sigmoid', model_path = ''):
+        if model_path:
+            self.__clf__=load(model_path)
+        else:
+            self.__clf__=svm.SVC(kernel = 'sigmoid', verbose = True)
 
-# features = []
-# classes = []
+    def fit_n_test(self, x, y, split = 0.2, **args):
+        train_features, test_features, train_labels, test_labels=train_test_split(
+            features,
+            classes,
+            test_size = 0.2,
+            random_state = 41)
+        self.__clf__.fit(train_features, train_labels, args)
+        return self.__test__(test_features, test_labels)
 
-# for filename in os.listdir(pos_dir):
-#     if fnmatch(filename, '*.ppm'):
-#         image = cv2.imread(os.path.join(pos_dir, filename), cv2.IMREAD_COLOR)
-#         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
-#                  cells_per_block=(2, 2), multichannel=True)
-#         features.append(fd)
+    def __test__(self, test_x, test_y):
+        for index, tf in enumerate(test_x):
+            if clf.predict([tf]) == test_y[index]:
+                counter += 1
+        return (counter / len(test_y)) * 100
 
-# pos_feature_count = len(features)
-# classes = [1] * pos_feature_count
+    def save(self, filepath):
+        dump(self.__clf__, filepath)
 
-# for filename in os.listdir(neg_dir):
-#     if fnmatch(filename, '*.jpg'):
-#         image = cv2.imread(os.path.join(neg_dir, filename), cv2.IMREAD_COLOR)
-#         fd = hog(image, orientations=9, pixels_per_cell=(8, 8),
-#                  cells_per_block=(2, 2), multichannel=True)
-#         features.append(fd)
+    def predict(image, feature_gen):
+        features=feature_gen.extract(image)
+        return self.__clf__.predict([featuress])
 
-# print("Fitting")
-# classes.extend([0] * (len(features) - pos_feature_count))
-# clf = svm.SVC(kernel='sigmoid', verbose=True)
-# clf.fit(features, classes)
-# im = cv2.imread(os.path.join(pos_dir, '3354800015_00020.ppm'))
-# fd = hog(im, orientations=9, pixels_per_cell=(8, 8),
-#          cells_per_block=(2, 2), multichannel=True)
-# print("Prediction:")
-# print(clf.predict([fd]))
-# dump(clf, 'models/detection.joblib')
+
+def main():
+    feature_extr=Feature_Extractor(hog, orientations = 9, pixels_per_cell = (
+        4, 4), cells_per_block = (2, 2), multichannel = True)
+
+    features=feature_extr.dir_extract('./data/detection/train/positive')
+    classes=[1] * len(features)
+    neg_features=feature_extr.dir_extract('./data/detection/train/negative')
+    classes.extend([0] * len(neg_features))
+    features.extend(neg_features)
+
+    clf=SVM()
+    accuracy=clf.fit_n_test(features, classes)
+    print(f"Train-test accuracy: {accuracy}%")
+
+
+if __name__ == "__main__":
+    main()

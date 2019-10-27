@@ -35,18 +35,19 @@ data.columns = names
 index = 0
 im_index = 0
 print(data)
-# for fname in os.listdir(detection_dir):
-#     if fnmatch(fname, '*.ppm'):
-#         image = cv2.imread(os.path.join(
-#             detection_dir, fname), cv2.IMREAD_COLOR)
-#         x, y, z = image.shape
-#         pyramid = dt.Image_Pyramid(image, 1.0, (x, y))
-#         generator = pyramid.sliding_window((32, 32), (32, 32))
-#         for item in generator:
-#             x1, y1, x2, y2 = item[1]
-#             if is_valid_negative((x1, y1), fname, data) and is_valid_negative((x2, y2), fname, data):
-#                 cv2.imwrite(f"data/detection/train/negative/{index}.jpg", item[0])
-#                 index += 1
-#         im_index += 1
-#     if im_index >= 90:
-#         break
+for fname in os.listdir(detection_dir):
+    if fnmatch(fname, '*.ppm'):
+        image = cv2.imread(os.path.join(
+            detection_dir, fname), cv2.IMREAD_COLOR)
+        x, y, z = image.shape
+        pyramid = dt.Image_Pyramid(image, 1.0, (x, y))
+        generator = pyramid.sliding_window((32, 32), (32, 32))
+        for item in generator:
+            x1, y1, x2, y2 = item[1]
+            if is_valid_negative((x1, y1), fname, data) and is_valid_negative((x2, y2), fname, data):
+                cv2.imwrite(
+                    f"data/detection/train/negative/{index}.jpg", item[0])
+                index += 1
+            im_index += 1
+    if index >= 10000:
+        break

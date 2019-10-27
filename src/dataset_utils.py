@@ -170,10 +170,3 @@ def split_directories(source_root, dest_root, N=0.2):
         if not os.path.isdir(dest_dir):
             os.makedirs(dest_dir, exist_ok=True)
             move_files(src_dir, dest_dir, N, '*.jpg')
-
-
-# src_dir = "./archives/GTSRB/Final_Training/Images/"
-# index = 0
-# for dirname in os.listdir(src_dir):
-#     path = os.path.join(src_dir, dirname)
-#     move_files(path, './data/detection/train/positive')
