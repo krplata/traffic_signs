@@ -33,7 +33,7 @@ utils.unzip_files(archive_dir, reco_data_dir)
 
 utils.cleanup_gtsrb_files(gtsrb_dir, reco_data_dir)
 
-aug.ppm_dir_to_jpg(reco_data_dir, train_dir)
+aug.ppm_dir_to_grey_jpg(reco_data_dir, train_dir)
 
 recognition_class_size = 4000
 aug.generate_augmented(train_dir, recognition_class_size)
