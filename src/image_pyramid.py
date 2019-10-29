@@ -1,5 +1,6 @@
 import cv2
 
+
 class Image_Pyramid:
     '''
     Creates a tuple filled with images scaled down by a factor.
@@ -35,7 +36,7 @@ class Image_Pyramid:
             - size (x:int, y:int): Defines the dimensions of the sliding window.
             - step (x:int, y:int): Defines the step sizes along the horizontal and vertical axis.
         '''
-        for index, image in enumerate(self.__images__):
+        for image in self.__images__:
             for y in range(0, image.shape[0] - size[1], step[1]):
                 for x in range(0, image.shape[1] - size[0], step[0]):
-                    yield [image[y:y+size[1], x:x+size[0]], (x, y, x+size[0], y+size[1])]
+                    yield image[y:y+size[1], x:x+size[0]]
