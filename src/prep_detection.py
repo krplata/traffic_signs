@@ -28,9 +28,9 @@ def is_valid_negative(point, filename, dataframe):
     return True
 
 
-detection_dir = 'data/detection/dirty'
+detection_dir = 'data/detection/stock'
 names = ['filename', 'x1', 'y1', 'x2', 'y2', 'class']
-data = pd.read_csv('./data/detection/dirty/gt.txt', sep=';')
+data = pd.read_csv('./data/detection/stock/gt.txt', sep=';')
 data.columns = names
 index = 0
 im_index = 0
@@ -46,8 +46,8 @@ for fname in os.listdir(detection_dir):
             x1, y1, x2, y2 = item[1]
             if is_valid_negative((x1, y1), fname, data) and is_valid_negative((x2, y2), fname, data):
                 cv2.imwrite(
-                    f"data/detection/train/negative/{index}.jpg", item[0])
+                    f"data/detection/train/inter/lmaooo_{index}.jpg", item[0])
                 index += 1
             im_index += 1
-    if index >= 10000:
+    if index >= 25000:
         break

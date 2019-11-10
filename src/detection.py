@@ -1,14 +1,13 @@
-import cv2
-from image_pyramid import Image_Pyramid
-from skimage.feature import hog
-from sklearn import svm
-from sklearn.model_selection import train_test_split
 import os
+import cv2
 from fnmatch import fnmatch
 from joblib import dump, load
-import time
-from sklearn.model_selection import cross_val_score
-
+from skimage.feature import hog
+from sklearn import svm
+from sklearn.model_selection import train_test_split, GridSearchCV, RepeatedKFold, cross_val_score, cross_val_predict
+from image_pyramid import Image_Pyramid
+from sklearn.metrics import confusion_matrix
+import numpy as np
 
 class Feature_Extractor:
     def __init__(self, function, *args, **kwargs):
@@ -25,14 +24,13 @@ class Feature_Extractor:
             ext (str): Extension of images in directory (Default = ppm)
         '''
         for filename in os.listdir(directory):
-            if fnmatch(filename, ext):
+            if fnmatch(filename, ext) or fnmatch(filename, '*.jpg'):
                 image = cv2.imread(os.path.join(
                     directory, filename), cv2.IMREAD_COLOR)
                 if dsize:
                     image = cv2.resize(image, dsize)
                 if grayscale:
                     image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-                image = cv2.Canny(image, 50, 200)
                 yield image
 
     def dir_extract(self, dirpath, ext='*.ppm', grayscale=False, dsize=None):
@@ -52,22 +50,30 @@ class Feature_Extractor:
 
 
 class SVM:
-    def __init__(self, kernel='sigmoid', model_path=''):
+    def __init__(self, kernel='rbf', model_path=''):
         if model_path:
             self.__clf__ = load(model_path)
         else:
             self.__clf__ = svm.SVC(kernel=kernel, verbose=True)
 
-    def fit(self, x, y, split=0.2, *args, **kwargs):
-        train_features, test_features, train_labels, test_labels = train_test_split(
-            x,
-            y,
-            test_size=split,
-            random_state=41)
-        self.__clf__.fit(train_features, train_labels, *args, **kwargs)
+    def fit(self, x, y, *args, **kwargs):
+        rkf = RepeatedKFold(n_splits=2, n_repeats=5)
+        y_pred = cross_val_predict(
+            svm.SVC(), x, y, n_jobs=-1, cv=rkf)
+        conf_mat = confusion_matrix(y, y_pred)
+        print(conf_mat)
 
-    def est_cross_val(self, x, y, k=5):
-        return cross_val_score(self.__clf__, x, y, cv=k, n_jobs=-1)
+    def grid_search(self, x, y):
+        param_grid = {
+            "kernel": ["rbf"],
+            "C": [0.01, 0.1, 1, 10, 100, 1000, 10000],
+            "gamma": [0.001, 0.01, 0.1, 1, 10, 100, 1000]
+        }
+        rkf = RepeatedKFold(n_splits=2, n_repeats=3)
+        gs = GridSearchCV(svm.SVC(), param_grid,
+                          scoring='accuracy', n_jobs=-1, cv=rkf)
+        gs.fit(x, y)
+        return gs.cv_results_
 
     def save(self, filepath):
         dump(self.__clf__, filepath)
@@ -84,31 +90,17 @@ def main():
 
     print("Extracting features from the trainig set.")
     features = feature_extr.dir_extract(
-        './data/detection/train/positive', dsize=(32, 32))
+        './data/detection/train/positive/circles', dsize=(32, 32), grayscale=True)
     classes = [1] * len(features)
     neg_features = feature_extr.dir_extract(
-        './data/detection/train/negative', dsize=(32, 32))
+        './data/detection/train/negative/circles', dsize=(32, 32), grayscale=True)
     classes.extend([0] * len(neg_features))
     features.extend(neg_features)
+    print(len(neg_features))
 
     clf = SVM()
     print("Fitting the SVM classifier.")
-    accuracy = clf.est_cross_val(features, classes)
-    print(accuracy)
-    # clf = SVM(model_path='models/detection.joblib')
-    # image = cv2.imread('data/detection/stock/00000.ppm', cv2.IMREAD_COLOR)
-    # x, y, z = image.shape
-    # pyramid = Image_Pyramid(image, 0.7, (x*0.6, y*0.6))
-    # generator = pyramid.sliding_window((32, 32), (10, 10))
-    # start = time.time()
-    # count = 0
-    # for image in generator:
-    #     if clf.predict(image, feature_extr) == 1:
-    #         count += 1
-    #         print("Found")
-    #         cv2.imwrite(f"predictions/{count}.jpg", image)
-    # print(f"Count: {count}")
-    # print(time.time() - start)
+    print(clf.grid_search(features, classes))
 
 
 if __name__ == "__main__":
