@@ -9,6 +9,7 @@ from image_pyramid import Image_Pyramid
 from sklearn.metrics import confusion_matrix
 import numpy as np
 
+
 class Feature_Extractor:
     def __init__(self, function, *args, **kwargs):
         self.__function__ = function
@@ -57,10 +58,10 @@ class SVM:
             self.__clf__ = svm.SVC(kernel=kernel, verbose=True)
 
     def fit(self, x, y, *args, **kwargs):
-        rkf = RepeatedKFold(n_splits=2, n_repeats=5)
-        y_pred = cross_val_predict(
-            svm.SVC(), x, y, n_jobs=-1, cv=rkf)
-        conf_mat = confusion_matrix(y, y_pred)
+        x_train, x_test, y_train, y_test = train_test_split(
+            x, y, random_state=0)
+        y_pred = svm.SVC(kernel='rbf', gamma=0.1, C=1.0).fit(x_train, y_train).predict(x_test)
+        conf_mat = confusion_matrix(y_test, y_pred)
         print(conf_mat)
 
     def grid_search(self, x, y):
@@ -90,17 +91,17 @@ def main():
 
     print("Extracting features from the trainig set.")
     features = feature_extr.dir_extract(
-        './data/detection/train/positive/circles', dsize=(32, 32), grayscale=True)
+        './data/detection/train/positive/triangles', dsize=(32, 32), grayscale=True)
     classes = [1] * len(features)
     neg_features = feature_extr.dir_extract(
-        './data/detection/train/negative/circles', dsize=(32, 32), grayscale=True)
+        './data/detection/train/negative/triangles', dsize=(32, 32), grayscale=True)
     classes.extend([0] * len(neg_features))
     features.extend(neg_features)
     print(len(neg_features))
 
     clf = SVM()
     print("Fitting the SVM classifier.")
-    print(clf.grid_search(features, classes))
+    clf.fit(features, classes)
 
 
 if __name__ == "__main__":

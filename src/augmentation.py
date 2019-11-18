@@ -25,9 +25,8 @@ def to_grey_jpg(src_path, output_dir=None):
     no_extension = os.path.splitext(src_path)[0]
     converted = no_extension + '.jpg'
     image = reshape.im_prepare(image)
-    grey = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     if not output_dir:
-        cv2.imwrite(converted, grey)
+        cv2.imwrite(converted, image)
     else:
         filename = os.path.basename(converted)
         cv2.imwrite(os.path.join(output_dir, filename), grey)

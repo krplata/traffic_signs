@@ -18,7 +18,8 @@ def plt_count_of_classes(images_path, title):
         for it in data:
             file_count_list.append(it[0])
             names.append(it[1])
-
+        
+        plt.tight_layout()
         plt.bar(np.arange(len(names)), file_count_list,
                 align='center')
         plt.xticks(np.arange(len(names)), names)
@@ -29,4 +30,4 @@ def plt_count_of_classes(images_path, title):
 
 
 plt_count_of_classes('./data/recognition/train',
-                     'Rozmiary klas w bazie GTSRB po wyrównaniu')
+                     'Rozmiary klas w bazie GTSRB')

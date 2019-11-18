@@ -2,14 +2,17 @@
 import os  # noqa
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # noqa
 import tensorflow as tf  # noqa
-
+from keras.utils import plot_model
 import numpy as np
 import pandas as pd
 from keras.layers import Conv2D, Dense, Dropout, Flatten, MaxPooling2D
 from keras.models import Sequential
 from keras.preprocessing.image import ImageDataGenerator
 import comparison as cp
-
+import matplotlib.pyplot as plt
+from keras import models
+from keras.preprocessing import image
+import matplotlib.image as mpimg
 
 class TsRecognitionModel:
     def __init__(self, layers=[]):
@@ -38,8 +41,9 @@ class TsRecognitionModel:
             self.__model__.add(Dense(43, activation='softmax'))
         self.__model__.compile(
             loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+        plot_model(self.__model__, to_file='model.pdf')
 
-    def run_training(self, train_gen, valid_gen, eps=10):
+    def run_training(self, train_gen, valid_gen, eps=25):
         self.__model__.fit_generator(train_gen, epochs=eps,
                                      validation_data=valid_gen, verbose=1)
         self.__model__.evaluate_generator(generator=valid_gen)
@@ -74,8 +78,7 @@ test_flow = ImageDataGenerator().flow_from_directory(
     './data/recognition/test/', class_mode='categorical', batch_size=1, color_mode="rgb", shuffle=False, target_size=(31, 31))
 
 tsmodel = TsRecognitionModel()
-tsmodel.run_training(train_flow, val_flow, eps=10)
-
+tsmodel.run_training(train_flow, val_flow, eps=21)
 print("Running predictions on internal test data:")
 STEP_SIZE_TEST = test_flow.n//test_flow.batch_size
 predictions = tsmodel.predict_w_gen(test_flow, STEP_SIZE_TEST)
@@ -102,5 +105,5 @@ tsmodel.predictions_to_csv(
     extern_gen, external_predictions, 'ext_results.csv')
 cp.accuracy_on_external("./data/recognition/external/GT-final_test.csv", "ext_results.csv")
 
-# print("Saving full model architecture into models/working_example.h5")
-# tsmodel.save_model('./models/working_example.h5')
+print("Saving full model architecture into models/working_example.h5")
+tsmodel.save_model('./models/working_example.h5')
