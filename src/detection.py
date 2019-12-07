@@ -47,12 +47,14 @@ class Feature_Extractor:
         return results
 
     def extract(self, image):
+        #image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         return self.__function__(image, *self.__args__, **self.__kwargs__)
 
 
 class SVM:
     def __init__(self, kernel='rbf', model_path=''):
         if model_path:
+            print('xddd')
             self.__clf__ = load(model_path)
         else:
             self.__clf__ = svm.SVC(kernel=kernel, verbose=True)
@@ -60,7 +62,7 @@ class SVM:
     def fit(self, x, y, *args, **kwargs):
         x_train, x_test, y_train, y_test = train_test_split(
             x, y, random_state=0)
-        y_pred = svm.SVC(kernel='rbf', gamma=0.1, C=1.0).fit(x_train, y_train).predict(x_test)
+        y_pred = self.__clf__.fit(x_train, y_train).predict(x_test)
         conf_mat = confusion_matrix(y_test, y_pred)
         print(conf_mat)
 
@@ -80,28 +82,35 @@ class SVM:
         dump(self.__clf__, filepath)
 
     def predict(self, image, feature_gen):
-        image = cv2.Canny(image, 50, 200)
         features = feature_gen.extract(image)
         return self.__clf__.predict([features])
+
+
+class Detector:
+    def __init__(self, circles_path='models/detect_circles.joblib', triangles_path='models/detect_triangles.joblib'):
+        self.__tr_clf__ = SVM(model_path=triangles_path)
+        self.__circle_clf__ = SVM(model_path=circles_path)
+
+    def predict(self, image_path, feature_gen):
+        full_image = cv2.imread(image_path, cv2.IMREAD_COLOR)
+        # full_image = cv2.cvtColor(full_image, cv2.COLOR_BGR2GRAY)
+        pyramid = Image_Pyramid(full_image, 0.7, (300, 150))
+        generator = pyramid.sliding_window((32, 32), (16, 16))
+        index = 0
+        for image in generator:
+            index += 1
+            triangle_resp = self.__tr_clf__.predict(image, feature_gen)
+            circle_resp = self.__circle_clf__.predict(image, feature_gen)
+            if (circle_resp[0] == 1 or triangle_resp[0] == 1) and circle_resp[0] != triangle_resp[0]:
+                cv2.imwrite(f"output/im{index}.jpg", image)
 
 
 def main():
     feature_extr = Feature_Extractor(hog, orientations=9, pixels_per_cell=(
         8, 8), cells_per_block=(2, 2))
 
-    print("Extracting features from the trainig set.")
-    features = feature_extr.dir_extract(
-        './data/detection/train/positive/triangles', dsize=(32, 32), grayscale=True)
-    classes = [1] * len(features)
-    neg_features = feature_extr.dir_extract(
-        './data/detection/train/negative/triangles', dsize=(32, 32), grayscale=True)
-    classes.extend([0] * len(neg_features))
-    features.extend(neg_features)
-    print(len(neg_features))
-
-    clf = SVM()
-    print("Fitting the SVM classifier.")
-    clf.fit(features, classes)
+    det = Detector()
+    det.predict('scene_ex.png', feature_extr)
 
 
 if __name__ == "__main__":
